@@ -3,12 +3,14 @@ import Filter from "./components/Filter";
 import PersonForm from "./components/PersonForm";
 import Persons from "./components/Persons";
 import phonebookService from "./services/phonebook";
+import Notification from "./components/Notification";
 
 const App = () => {
   const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState("");
   const [number, setNumber] = useState("");
   const [searchValue, setSearchValue] = useState("");
+  const [message, setMessage] = useState({ text: null, type: null });
 
   useEffect(() => {
     phonebookService.getAll().then((persons) => {
@@ -51,7 +53,14 @@ const App = () => {
             persons.map((p) => (p.id === existingPerson.id ? updatedPerson : p))
           );
         })
-        .catch((err) => console.log(err));
+        .catch((err) => {
+          console.log(err);
+          setMessage({
+            text: `Information of ${existingPerson.name} has already been removed from server`,
+            type: "error",
+          });
+          setTimeout(() => setMessage(null), 5000);
+        });
 
       setNewName("");
       setNumber("");
@@ -63,6 +72,9 @@ const App = () => {
     phonebookService.create(newPerson).then((personData) => {
       setPersons(persons.concat(personData));
     });
+
+    setMessage({ text: `Added ${newName}`, type: "success" });
+    setTimeout(() => setMessage(null), 5000);
 
     setNewName("");
     setNumber("");
@@ -91,6 +103,7 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notification message={message.text} type={message.type} />
       <Filter value={searchValue} onChange={handleSearchInput} />
       <h3>Add a new</h3>
       <PersonForm
