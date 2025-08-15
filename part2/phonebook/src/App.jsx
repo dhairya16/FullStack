@@ -59,7 +59,7 @@ const App = () => {
             text: `Information of ${existingPerson.name} has already been removed from server`,
             type: "error",
           });
-          setTimeout(() => setMessage(null), 5000);
+          setTimeout(() => setMessage({ text: null, type: null }), 5000);
         });
 
       setNewName("");
@@ -74,7 +74,7 @@ const App = () => {
     });
 
     setMessage({ text: `Added ${newName}`, type: "success" });
-    setTimeout(() => setMessage(null), 5000);
+    setTimeout(() => setMessage({ text: null, type: null }), 5000);
 
     setNewName("");
     setNumber("");
