@@ -45,35 +45,35 @@ app.get("/api/persons", (request, response) => {
 
 app.get("/info", (request, response) => {
   const currentTime = new Date();
-  const responseString = `
-    <p>Phonebook has info for ${persons.length} people</p>
-    <p>${currentTime}</p>
-  `;
-
-  response.send(responseString);
+  Person.countDocuments({}).then((count) => {
+    const responseString = `
+      <p>Phonebook has info for ${count} people</p>
+      <p>${currentTime}</p>
+    `;
+    response.send(responseString);
+  });
 });
 
-app.get("/api/persons/:id", (request, response) => {
+app.get("/api/persons/:id", (request, response, next) => {
   const id = request.params.id;
-  const person = persons.find((p) => p.id === id);
-  if (person) {
-    response.json(person);
-  } else {
-    response.status(404).end();
-  }
+  Person.findById(id)
+    .then((person) => {
+      if (person) {
+        return response.status(200).json(person);
+      } else {
+        return response.status(204).json({});
+      }
+    })
+    .catch((err) => next(err));
 });
 
-app.delete("/api/persons/:id", (request, response) => {
-  const id = request.params.id;
-  persons = persons.filter((p) => p.id !== id);
-
-  response.status(204).end();
+app.delete("/api/persons/:id", (request, response, next) => {
+  Person.findByIdAndDelete(request.params.id)
+    .then((result) => {
+      response.status(204).end();
+    })
+    .catch((error) => next(error));
 });
-
-const generateId = () => {
-  const newId = Math.ceil(Math.random() * 1000000);
-  return String(newId);
-};
 
 app.post("/api/persons", (request, response) => {
   const body = request.body;
@@ -90,22 +90,60 @@ app.post("/api/persons", (request, response) => {
     });
   }
 
-  const existingPerson = persons.find((p) => p.name === body.name);
-  if (existingPerson) {
-    return response.status(400).json({
-      error: "name must be unique",
-    });
-  }
+  Person.findOne({ name: body.name }).then((existingPerson) => {
+    if (existingPerson) {
+      return response.status(400).json({ error: "conflict" });
+    } else {
+      // Person does not exist, create new
+      const person = new Person({
+        name: body.name,
+        number: body.number,
+      });
 
-  const person = new Person({
-    name: body.name,
-    number: String(body.number) || "",
-  });
-
-  person.save().then((savedPerson) => {
-    response.json(savedPerson);
+      person
+        .save()
+        .then((savedPerson) => {
+          response.json(savedPerson);
+        })
+        .catch((error) => next(error));
+    }
   });
 });
+
+app.put("/api/persons/:id", (request, response, next) => {
+  const id = request.params.id;
+  const body = request.body;
+
+  if (!body.number) {
+    return response.status(400).json({ error: "number missing" });
+  }
+
+  Person.findByIdAndUpdate(
+    id,
+    { number: body.number },
+    { new: true, runValidators: true, context: "query" }
+  )
+    .then((updatedPerson) => {
+      if (updatedPerson) {
+        response.json(updatedPerson);
+      } else {
+        response.status(404).end();
+      }
+    })
+    .catch((error) => next(error));
+});
+
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message);
+
+  if (error.name === "CastError") {
+    return response.status(400).send({ error: "malformatted id" });
+  }
+
+  next(error);
+};
+
+app.use(errorHandler);
 
 const PORT = 3001;
 app.listen(PORT, () => {
