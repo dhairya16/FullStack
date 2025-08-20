@@ -69,11 +69,17 @@ const App = () => {
     }
 
     const newPerson = { name: newName, number: number };
-    phonebookService.create(newPerson).then((personData) => {
-      setPersons(persons.concat(personData));
-    });
+    phonebookService
+      .create(newPerson)
+      .then((personData) => {
+        setPersons(persons.concat(personData));
+        setMessage({ text: `Added ${newName}`, type: "success" });
+      })
+      .catch((error) => {
+        console.log(error.response.data.error);
+        setMessage({ text: error.response.data.error, type: "error" });
+      });
 
-    setMessage({ text: `Added ${newName}`, type: "success" });
     setTimeout(() => setMessage({ text: null, type: null }), 5000);
 
     setNewName("");
