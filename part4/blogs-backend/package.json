@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "node --watch index.js",
-    "test": "node --test",
+    "start": "NODE_ENV=production node index.js",
+    "dev": "NODE_ENV=development node --watch index.js",
+    "test": "NODE_ENV=test node --test",
     "lint": "eslint ."
   },
   "keywords": [],
@@ -19,6 +20,7 @@
   "devDependencies": {
     "@eslint/js": "^9.33.0",
     "@stylistic/eslint-plugin-js": "^4.4.1",
-    "eslint": "^9.33.0"
+    "eslint": "^9.33.0",
+    "supertest": "^7.1.4"
   }
 }
