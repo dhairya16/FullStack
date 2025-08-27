@@ -1,24 +1,54 @@
 const express = require('express')
 const Blog = require('../models/blog')
+const middleware = require('../utils/middleware')
 
 const blogRouter = express.Router()
 
 blogRouter.get('/', async (request, response) => {
-  const blogs = await Blog.find({})
+  const blogs = await Blog.find({}).populate('user', { username: 1, name: 1 })
   response.json(blogs)
 })
 
-blogRouter.post('/', async (request, response) => {
-  const newBlog = { ...request.body, likes: request.body.likes || 0 }
-  const blog = new Blog(newBlog)
-  const result = await blog.save()
-  response.status(201).json(result)
+blogRouter.post('/', middleware.userExtractor, async (request, response) => {
+  const body = request.body
+
+  const user = request.user
+
+  if (!user) {
+    return response.status(400).json({ error: 'userId missing or not valid' })
+  }
+
+  const blog = new Blog({
+    ...body,
+    likes: body.likes || 0,
+    user: user._id,
+  })
+
+  const savedBlog = await blog.save()
+  user.blogs = user.blogs.concat(savedBlog._id)
+  await user.save()
+
+  response.status(201).json(savedBlog)
 })
 
-blogRouter.delete('/:id', async (request, response) => {
-  await Blog.findByIdAndDelete(request.params.id)
-  response.status(204).end()
-})
+blogRouter.delete(
+  '/:id',
+  middleware.userExtractor,
+  async (request, response) => {
+    const user = request.user
+    if (!user) {
+      return response.status(400).json({ error: 'userId missing or not valid' })
+    }
+
+    const blogToDelete = await Blog.findById(request.params.id)
+    if (user._id.toString() !== blogToDelete.user.toString()) {
+      return response.status(400).json({ error: 'operation not allowed' })
+    }
+
+    await Blog.findByIdAndDelete(request.params.id)
+    response.status(204).end()
+  }
+)
 
 blogRouter.put('/:id', async (request, response) => {
   const { title, author, url, likes } = request.body
