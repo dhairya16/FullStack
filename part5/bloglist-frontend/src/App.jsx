@@ -1,89 +1,89 @@
-import { useState, useEffect } from "react";
-import Blog from "./components/Blog";
-import blogService from "./services/blogs";
-import loginService from "./services/login";
-import BlogForm from "./components/BlogForm";
-import Togglable from "./components/Togglable";
+import { useState, useEffect } from 'react'
+import Blog from './components/Blog'
+import blogService from './services/blogs'
+import loginService from './services/login'
+import BlogForm from './components/BlogForm'
+import Togglable from './components/Togglable'
 
 const App = () => {
-  const [blogs, setBlogs] = useState([]);
-  const [user, setUser] = useState(null);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [notification, setNotification] = useState(null);
+  const [blogs, setBlogs] = useState([])
+  const [user, setUser] = useState(null)
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [notification, setNotification] = useState(null)
 
   useEffect(() => {
     blogService
       .getAll()
-      .then((blogs) => setBlogs(blogs.sort((b1, b2) => b2.likes - b1.likes)));
-  }, []);
+      .then((blogs) => setBlogs(blogs.sort((b1, b2) => b2.likes - b1.likes)))
+  }, [])
 
   useEffect(() => {
-    const loggedUserInfo = window.localStorage.getItem("loggedBlogappUser");
+    const loggedUserInfo = window.localStorage.getItem('loggedBlogappUser')
     if (loggedUserInfo) {
-      const user = JSON.parse(loggedUserInfo);
-      setUser(user);
-      blogService.setToken(user.token);
+      const user = JSON.parse(loggedUserInfo)
+      setUser(user)
+      blogService.setToken(user.token)
     }
-  }, []);
+  }, [])
 
   const handleLogin = async (event) => {
-    event.preventDefault();
+    event.preventDefault()
 
     try {
-      const user = await loginService.login({ username, password });
+      const user = await loginService.login({ username, password })
 
-      window.localStorage.setItem("loggedBlogappUser", JSON.stringify(user));
-      blogService.setToken(user.token);
-      setUser(user);
-      setUsername("");
-      setPassword("");
+      window.localStorage.setItem('loggedBlogappUser', JSON.stringify(user))
+      blogService.setToken(user.token)
+      setUser(user)
+      setUsername('')
+      setPassword('')
     } catch (error) {
-      console.log(error);
-      setNotification(String(error.response.data.error));
+      console.log(error)
+      setNotification(String(error.response.data.error))
       setTimeout(() => {
-        setNotification(null);
-      }, 5000);
+        setNotification(null)
+      }, 5000)
     }
-  };
+  }
 
   const handleLogout = () => {
-    window.localStorage.removeItem("loggedBlogappUser");
-    setUser(null);
-  };
+    window.localStorage.removeItem('loggedBlogappUser')
+    setUser(null)
+  }
 
   const handleCreateBlog = async (newBlog) => {
     try {
-      const returnedBlog = await blogService.create(newBlog);
-      setBlogs(blogs.concat(returnedBlog));
+      const returnedBlog = await blogService.create(newBlog)
+      setBlogs(blogs.concat(returnedBlog))
 
       setNotification(
         `a new blog ${returnedBlog.title} by ${returnedBlog.author} added`
-      );
+      )
       setTimeout(() => {
-        setNotification(null);
-      }, 5000);
+        setNotification(null)
+      }, 5000)
     } catch (error) {
-      setNotification(String(error.response.data.error));
+      setNotification(String(error.response.data.error))
       setTimeout(() => {
-        setNotification(null);
-      }, 5000);
+        setNotification(null)
+      }, 5000)
     }
-  };
+  }
 
   const handleLikeBlog = async (blogData) => {
-    const updatedBlog = await blogService.update(blogData);
+    const updatedBlog = await blogService.update(blogData)
     setBlogs(
       blogs
         .map((b) => (b.id !== updatedBlog.id ? b : updatedBlog))
         .sort((b1, b2) => b2.likes - b1.likes)
-    );
-  };
+    )
+  }
 
   const handleDeleteBlog = async (id) => {
-    await blogService.deleteBlog(id);
-    setBlogs(blogs.filter((b) => b.id !== id));
-  };
+    await blogService.deleteBlog(id)
+    setBlogs(blogs.filter((b) => b.id !== id))
+  }
 
   if (user === null) {
     return (
@@ -114,7 +114,7 @@ const App = () => {
           <button type="submit">submit</button>
         </form>
       </div>
-    );
+    )
   }
 
   return (
@@ -140,7 +140,7 @@ const App = () => {
         />
       ))}
     </div>
-  );
-};
+  )
+}
 
-export default App;
+export default App
