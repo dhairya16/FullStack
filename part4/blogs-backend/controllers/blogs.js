@@ -50,7 +50,12 @@ blogRouter.delete(
   }
 )
 
-blogRouter.put('/:id', async (request, response) => {
+blogRouter.put('/:id', middleware.userExtractor, async (request, response) => {
+  const user = request.user
+  if (!user) {
+    return response.status(400).json({ error: 'userId missing or not valid' })
+  }
+
   const { title, author, url, likes } = request.body
 
   const blog = await Blog.findById(request.params.id)
@@ -63,7 +68,11 @@ blogRouter.put('/:id', async (request, response) => {
   blog.url = url
   blog.likes = likes
 
-  const updatedBlog = await blog.save()
+  await blog.save()
+  const updatedBlog = await Blog.findById(blog._id).populate('user', {
+    username: 1,
+    name: 1,
+  })
   response.json(updatedBlog)
 })
 

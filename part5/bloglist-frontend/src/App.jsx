@@ -2,19 +2,20 @@ import { useState, useEffect } from "react";
 import Blog from "./components/Blog";
 import blogService from "./services/blogs";
 import loginService from "./services/login";
+import BlogForm from "./components/BlogForm";
+import Togglable from "./components/Togglable";
 
 const App = () => {
   const [blogs, setBlogs] = useState([]);
   const [user, setUser] = useState(null);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [title, setTitle] = useState("");
-  const [author, setAuthor] = useState("");
-  const [url, setUrl] = useState("");
   const [notification, setNotification] = useState(null);
 
   useEffect(() => {
-    blogService.getAll().then((blogs) => setBlogs(blogs));
+    blogService
+      .getAll()
+      .then((blogs) => setBlogs(blogs.sort((b1, b2) => b2.likes - b1.likes)));
   }, []);
 
   useEffect(() => {
@@ -22,6 +23,7 @@ const App = () => {
     if (loggedUserInfo) {
       const user = JSON.parse(loggedUserInfo);
       setUser(user);
+      blogService.setToken(user.token);
     }
   }, []);
 
@@ -50,34 +52,37 @@ const App = () => {
     setUser(null);
   };
 
-  const handleCreateBlog = async (event) => {
-    event.preventDefault();
-
+  const handleCreateBlog = async (newBlog) => {
     try {
-      const newBlog = {
-        title,
-        author,
-        url,
-      };
-
       const returnedBlog = await blogService.create(newBlog);
       setBlogs(blogs.concat(returnedBlog));
 
-      setNotification(`a new blog ${title} by ${author} added`);
+      setNotification(
+        `a new blog ${returnedBlog.title} by ${returnedBlog.author} added`
+      );
       setTimeout(() => {
         setNotification(null);
       }, 5000);
-
-      setTitle("");
-      setAuthor("");
-      setUrl("");
     } catch (error) {
-      console.log(error);
       setNotification(String(error.response.data.error));
       setTimeout(() => {
         setNotification(null);
       }, 5000);
     }
+  };
+
+  const handleLikeBlog = async (blogData) => {
+    const updatedBlog = await blogService.update(blogData);
+    setBlogs(
+      blogs
+        .map((b) => (b.id !== updatedBlog.id ? b : updatedBlog))
+        .sort((b1, b2) => b2.likes - b1.likes)
+    );
+  };
+
+  const handleDeleteBlog = async (id) => {
+    await blogService.deleteBlog(id);
+    setBlogs(blogs.filter((b) => b.id !== id));
   };
 
   if (user === null) {
@@ -121,43 +126,18 @@ const App = () => {
         <button onClick={handleLogout}>logout</button>
       </p>
 
-      <h2>create new</h2>
-      <form onSubmit={handleCreateBlog}>
-        <div>
-          <label>
-            title:
-            <input
-              type="text"
-              value={title}
-              onChange={({ target }) => setTitle(target.value)}
-            />
-          </label>
-        </div>
-        <div>
-          <label>
-            author:
-            <input
-              type="text"
-              value={author}
-              onChange={({ target }) => setAuthor(target.value)}
-            />
-          </label>
-        </div>
-        <div>
-          <label>
-            url:
-            <input
-              type="text"
-              value={url}
-              onChange={({ target }) => setUrl(target.value)}
-            />
-          </label>
-        </div>
-        <button type="submit">create</button>
-      </form>
+      <Togglable btnLabel="create new blog">
+        <BlogForm createBlog={handleCreateBlog} />
+      </Togglable>
 
       {blogs.map((blog) => (
-        <Blog key={blog.id} blog={blog} />
+        <Blog
+          key={blog.id}
+          blog={blog}
+          updateBlog={handleLikeBlog}
+          user={user}
+          deleteBlog={handleDeleteBlog}
+        />
       ))}
     </div>
   );
