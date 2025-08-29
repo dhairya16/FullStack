@@ -31,6 +31,8 @@ const Blog = ({ blog, updateBlog, user, deleteBlog }) => {
     deleteBlog(blog.id)
   }
 
+  console.log(JSON.stringify(blog) + '--' + user.username)
+
   const showWhenUserMatchesWithBlog = {
     display: blog.user.username === user.username ? '' : 'none',
   }
