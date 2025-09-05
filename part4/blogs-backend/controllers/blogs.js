@@ -80,4 +80,31 @@ blogRouter.put('/:id', middleware.userExtractor, async (request, response) => {
   response.json(updatedBlog)
 })
 
+blogRouter.post(
+  '/:id/comments',
+  middleware.userExtractor,
+  async (request, response) => {
+    const user = request.user
+    if (!user) {
+      return response.status(400).json({ error: 'userId missing or not valid' })
+    }
+
+    const { comment } = request.body
+
+    const blog = await Blog.findById(request.params.id)
+    if (!blog) {
+      return response.status(404).end()
+    }
+
+    blog.comments = [...blog.comments, comment]
+    await blog.save()
+
+    const updatedBlog = await Blog.findById(blog._id).populate('user', {
+      username: 1,
+      name: 1,
+    })
+    response.json(updatedBlog)
+  }
+)
+
 module.exports = blogRouter
