@@ -8,6 +8,7 @@ mongoose.set('strictQuery', false)
 const Book = require('./models/book')
 const Author = require('./models/author')
 const User = require('./models/user')
+const { GraphQLError } = require('graphql')
 
 require('dotenv').config()
 
@@ -201,7 +202,12 @@ const resolvers = {
       // Always populate author so GraphQL gets the object, not just _id
       return Book.find(filter).populate('author')
     },
-    allAuthors: () => authors,
+    allAuthors: async () => {
+      return Author.find({})
+    },
+    me: (root, args, context) => {
+      return context.currentUser
+    },
   },
   Author: {
     bookCount: async (root) => {
@@ -210,8 +216,9 @@ const resolvers = {
     },
   },
   Mutation: {
-    addBook: async (root, args, { currentUser }) => {
-      if (!currentUser) {
+    addBook: async (root, args, context) => {
+      console.log('add book -->', context)
+      if (!context.currentUser) {
         throw new GraphQLError('wrong credentials', {
           extensions: { code: 'BAD_USER_INPUT' },
         })
